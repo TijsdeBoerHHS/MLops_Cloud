@@ -1,0 +1,37 @@
+# .github/workflows/deploy-api.yml
+# Deployt de FastAPI automatisch naar Railway bij elke push naar main.
+#
+# Eenmalige setup:
+#   1. Maak account op https://railway.app (gratis, geen creditcard)
+#   2. New Project → Deploy from GitHub repo → selecteer jullie repo
+#   3. Stel in: Dockerfile Path = Dockerfile.api
+#   4. Railway → Settings → Tokens → kopieer token
+#   5. GitHub repo → Settings → Secrets → New secret:
+#      Naam: RAILWAY_TOKEN  Waarde: <jouw token>
+
+name: Deploy API to Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app.py"
+      - "Dockerfile.api"
+      - "requirements-api.txt"
+      - "model.json"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service traffic-api --detach
