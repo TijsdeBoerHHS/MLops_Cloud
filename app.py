@@ -1,15 +1,4 @@
-"""FastAPI deployment voor het XGBoost verkeersvolume model.
-
-Het model wordt geladen vanuit model.json (XGBoost native formaat).
-Zo is er geen MLflow server nodig in de cloud.
-
-Start de server met:
-    uvicorn app:app --host 0.0.0.0 --port 8000
-
-Of via Docker:
-    docker build -f Dockerfile.api -t traffic-api .
-    docker run -p 8000:8000 -v $(pwd)/model.json:/app/model.json traffic-api
-"""
+"""FastAPI deployment voor het XGBoost verkeersvolume model."""
 
 import os
 import xgboost as xgb
@@ -18,7 +7,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import Optional
 
-# Model laden vanuit bestand (werkt lokaal én in de cloud)
 MODEL_PATH = os.getenv("MODEL_PATH", "model.json")
 model = xgb.XGBRegressor()
 model.load_model(MODEL_PATH)
@@ -57,6 +45,12 @@ def health_check():
 @app.post("/predict", response_model=PredictionResponse)
 def predict(features: TrafficFeatures):
     df = pd.DataFrame([features.model_dump()])
+
+    # weather_main en weather_description waren one-hot encoded tijdens training
+    # en kunnen niet als string naar XGBoost — droppen voor de voorspelling
+    df = df.drop(columns=["weather_main", "weather_description"])
+    df = df.astype(float)
+
     try:
         prediction = model.predict(df)
         return PredictionResponse(
