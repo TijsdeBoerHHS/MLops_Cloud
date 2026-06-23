@@ -1,0 +1,32 @@
+# Dockerfile.spark
+# ─────────────────────────────────────────────────────────────────────────────
+# Spark + XGBoost trainingscontainer voor Windows-gebruikers.
+#
+# Bouwen:
+#   docker build -f Dockerfile.spark -t traffic-spark .
+#
+# Trainen (voer uit vanuit de projectmap):
+#   docker run --rm ^
+#     -v "%cd%/Data":/app/Data ^
+#     -v "%cd%/mlruns-cloud":/app/mlruns-cloud ^
+#     traffic-spark
+# ─────────────────────────────────────────────────────────────────────────────
+
+FROM spark:python3
+
+USER root
+
+# Maak 'python' beschikbaar als alias voor 'python3'
+RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# Installeer Python-packages
+COPY requirements-spark.txt /app/requirements-spark.txt
+RUN pip install --no-cache-dir -r /app/requirements-spark.txt
+
+# Kopieer het trainingsscript
+COPY train.py /app/train.py
+
+WORKDIR /app
+
+# Gebruik python3 expliciet
+CMD ["python3", "train.py"]
